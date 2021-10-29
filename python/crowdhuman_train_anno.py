@@ -1,5 +1,5 @@
 # code from https://github.com/alaksana96/darknet-crowdhuman/blob/master/crowdhuman_train_anno.py
-
+# https://atharvamusale.medium.com/vehicle-tracking-and-counting-using-yolov3-and-deep-sort-f43d1c66c7c6
 import numpy
 import cv2
 from multiprocessing import Process, Manager

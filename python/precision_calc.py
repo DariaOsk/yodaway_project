@@ -3,6 +3,7 @@ from copy import deepcopy
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import tqdm
 from multiprocessing import Process, Manager
 #from tqdm import tqdm
 #import seaborn as sns

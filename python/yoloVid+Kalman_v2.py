@@ -10,17 +10,19 @@ import argparse
 import os
 import imutils
 import time
-from Kalmanfilter import Kalmanfilter
-
+from Kalmanfilter_remake import Kalmanfilter
+from tracker import Tracker
 from numpy.lib.type_check import _nan_to_num_dispatcher
 
 #instead of argparse fixed values  --output output/wildrack_MOT.avi --yolo yolo-coco\venvYodaway\code\yolo>
 inputvid =  "../data/vid/cam1_5s.mp4"
 output_dir = "./output"
 yolo_dir = "../yolov3"
-confidence = 0.5 #default 0.5
+confidence = 0.7 #default 0.5
 threshold = 0.3 #default 0.3
-KF = Kalmanfilter(0.1, 1, 1, 1, 0.1,0.1)
+KF = Kalmanfilter(0.005, 1, 1, 1, 0.1,0.1)
+                #(0.1, 1, 1, 1, 0.1, 0.1)
+
 
 #load coco class labels 
 labelsPath = os.path.sep.join([yolo_dir, "coco_selected.names"])
@@ -124,10 +126,11 @@ while True:
             # extract centroid positions
             cx = int(x + ((x+w)-(x))/2)
             cy = int((y+h) - ((y+h)-y)/2)
-
+            #print(cx,cy)
             # include box centroids into array that will be passed to KalmanFilter
             centroids.append(np.array([[cx], [cy]]))
-
+            centroidArray = np.array([[cx],[cy]])
+            #print(centroidArray[0], centroidArray[1])
             #different colours - not necessary if classID only 1 (person)
             #color = [int(c) for c in COLORS[classIDs[i]]]
             color = (0,200,200)
@@ -139,28 +142,34 @@ while True:
 
             # if only person then not necessary:
             #txt = "{}: {:.4f}".format(LABELS[classIDs[i]],confs[i])
-            txt = "person"
+            txt = "person: {}".format(round(confs[i],2))
             cv2.putText(frame, txt, (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-
+            
     #Applying Kalmanfilter to yolo detector    /  store centroids in dict  safe pred in blob object
-    if (len(centroids) > 0):
-            for i in centroids:
-                # Predict
-                (x_, y_) = KF.predict()
-                
-                # Draw a rectangle as the predicted object position
-                cv2.rectangle(frame, (int(x_-30), int(y_-50)), (int(x_+30), int(y_+50)), (255, 0, 0), 2)
-                
-                # Update Kalman Trajectory
-                (x1, y1) = KF.update(centroids[7])#KF.update(centers[0])
+    # if (len(centroids) > 0):
+    #         for i in centroids:
+            # Predict
+            (x_, y_) = KF.predict()
+            
+            # Draw a rectangle as the predicted object position
+            #cv2.rectangle(frame, (int(x_-30), int(y_-50)), (int(x_+30), int(y_+50)), (255, 0, 0), 2)
+            
+            # Update Kalman Trajectory
+            (x1, y1) = KF.update([centroidArray[0],centroidArray[1]])#KF.update(centers[0])
+            #print(centroidArray)
+            # Draw a rectangle as the estimated object position
+            #cv2.rectangle(frame, ( int(x1-30), int(y1-50)), (int(x1+30), int(y1+50)), (0, 0, 255), 2)
+            cv2.putText(frame, "Estimated Position", (int(x1+30), int(y1+50)), 0, 0.5, (0, 0, 255), 2)
+            cv2.putText(frame, "Predicted Position", (int(x_+30), int(y_)), 0, 0.5, (255, 0, 0), 2)
+            cv2.putText(frame, "Measured Position", (int(centroidArray[0]) + 15, int(centroidArray[1]) - 15), 0, 0.5, (0,191,255), 2)
 
-                # Draw a rectangle as the estimated object position
-                cv2.rectangle(frame, ( int(x1-30), int(y1-50)), (int(x1+30), int(y1+50)), (0, 0, 255), 2)
-                cv2.putText(frame, "Estimated Position", (int(x1+30), int(y1+50)), 0, 0.5, (0, 0, 255), 2)
-                cv2.putText(frame, "Predicted Position", (int(x_+30), int(y_)), 0, 0.5, (255, 0, 0), 2)
-                cv2.putText(frame, "Measured Position", (int(centroids[0][0]) + 15, int(centroids[0][1]) - 15), 0, 0.5, (0,191,255), 2)
-    
-    
+    if (len(centroids) >0):
+        tracker.Update(centroids)
+
+        for i in range(len(trackers.tracks)):
+            if (len(tracker.tracks[i].trace) > 1):
+                
+
     
     cv2.imshow('frame', frame)
 
@@ -186,3 +195,5 @@ cv2.destroyAllWindows()
 print("INFO: clean up...")
 #writer.release()
 vs.release()
+
+#need to return centers
