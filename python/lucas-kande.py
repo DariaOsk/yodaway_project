@@ -3,7 +3,7 @@
 import cv2
 import numpy as np
 import time
-videopath = "../../research/cam4.mp4"
+videopath = "../data/vid/cam1_5s.mp4"
 time_elapsed = 0
 
 def main():

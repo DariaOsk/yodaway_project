@@ -23,7 +23,7 @@ threshold = 0.3 #default 0.3
 KF = Kalmanfilter(0.1, 1, 1, 1, 0.1,0.1)
 
 #load coco class labels 
-labelsPath = os.path.sep.join([yolo_dir, "coco_selected.names"])
+labelsPath = os.path.sep.join([yolo_dir, "coco.names"])
 LABELS = open(labelsPath).read().strip().split("\n")
 
 #initilize colors for labels

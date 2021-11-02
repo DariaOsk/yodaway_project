@@ -10,9 +10,10 @@ import argparse
 import os
 import imutils
 import time
-from Kalmanfilter_remake import Kalmanfilter
+from Kalmanfilter_remake import KalmanFilter
 from tracker import Tracker
 from numpy.lib.type_check import _nan_to_num_dispatcher
+#from utils import *
 
 #instead of argparse fixed values  --output output/wildrack_MOT.avi --yolo yolo-coco\venvYodaway\code\yolo>
 inputvid =  "../data/vid/cam1_5s.mp4"
@@ -20,12 +21,16 @@ output_dir = "./output"
 yolo_dir = "../yolov3"
 confidence = 0.7 #default 0.5
 threshold = 0.3 #default 0.3
-KF = Kalmanfilter(0.005, 1, 1, 1, 0.1,0.1)
+#KF = KalmanFilter(0.005, 1, 1, 1, 0.1,0.1)
                 #(0.1, 1, 1, 1, 0.1, 0.1)
-
-
+tracker = Tracker(160,30,5,100)
+skip_frame_count = 0
+track_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
+                (0, 255, 255), (255, 0, 255), (255, 127, 255),
+                (127, 0, 255), (127, 0, 127)]
+pause = False
 #load coco class labels 
-labelsPath = os.path.sep.join([yolo_dir, "coco_selected.names"])
+labelsPath = os.path.sep.join([yolo_dir, "coco.names"])
 LABELS = open(labelsPath).read().strip().split("\n")
 
 #initilize colors for labels
@@ -47,7 +52,7 @@ layerNames = [layerNames[i[0]-1] for i in net.getUnconnectedOutLayers()]
 #init of videostream 
 vs = cv2.VideoCapture(inputvid)
 writer = None
-(W,H) = (None, None)
+(H,W) = (None, None)
 
 #count total nr of frames in video
 try:
@@ -72,6 +77,9 @@ while True:
     if W is None or H is None:
         (H,W) = frame.shape[:2]
 
+    # Make copy of original frame
+    #orig_frame = copy.copy(frame)
+    
     # blob for input frame and forward pass to YOLO object detector, with bounding boxes + probabilities
     blob = cv2.dnn.blobFromImage(frame, 1/255.0, (416,416), swapRB=True, crop=False)
     net.setInput(blob)
@@ -114,7 +122,7 @@ while True:
         
     # non-maxima suppression=filtering out unnecessary boxes
     idxs = cv2.dnn.NMSBoxes(bboxes, confs, confidence, threshold)
-    print(len(idxs))
+    #print(len(idxs))
     # ensure that detection exists
     if len(idxs) > 0:        
         # loop over indexes 
@@ -128,7 +136,7 @@ while True:
             cy = int((y+h) - ((y+h)-y)/2)
             #print(cx,cy)
             # include box centroids into array that will be passed to KalmanFilter
-            centroids.append(np.array([[cx], [cy]]))
+            centroids.append(np.round(np.array([[cx], [cy]])))
             centroidArray = np.array([[cx],[cy]])
             #print(centroidArray[0], centroidArray[1])
             #different colours - not necessary if classID only 1 (person)
@@ -149,26 +157,34 @@ while True:
     # if (len(centroids) > 0):
     #         for i in centroids:
             # Predict
-            (x_, y_) = KF.predict()
+            #(x_, y_) = KF.predict()
             
             # Draw a rectangle as the predicted object position
             #cv2.rectangle(frame, (int(x_-30), int(y_-50)), (int(x_+30), int(y_+50)), (255, 0, 0), 2)
             
             # Update Kalman Trajectory
-            (x1, y1) = KF.update([centroidArray[0],centroidArray[1]])#KF.update(centers[0])
+            #(x1, y1) = KF.update([centroidArray[0],centroidArray[1]])#KF.update(centers[0])
             #print(centroidArray)
             # Draw a rectangle as the estimated object position
             #cv2.rectangle(frame, ( int(x1-30), int(y1-50)), (int(x1+30), int(y1+50)), (0, 0, 255), 2)
-            cv2.putText(frame, "Estimated Position", (int(x1+30), int(y1+50)), 0, 0.5, (0, 0, 255), 2)
-            cv2.putText(frame, "Predicted Position", (int(x_+30), int(y_)), 0, 0.5, (255, 0, 0), 2)
-            cv2.putText(frame, "Measured Position", (int(centroidArray[0]) + 15, int(centroidArray[1]) - 15), 0, 0.5, (0,191,255), 2)
+            #cv2.putText(frame, "Estimated Position", (int(x1+30), int(y1+50)), 0, 0.5, (0, 0, 255), 2)
+            #cv2.putText(frame, "Predicted Position", (int(x_+30), int(y_)), 0, 0.5, (255, 0, 0), 2)
+            #cv2.putText(frame, "Measured Position", (int(centroidArray[0]) + 15, int(centroidArray[1]) - 15), 0, 0.5, (0,191,255), 2)
 
     if (len(centroids) >0):
         tracker.Update(centroids)
 
-        for i in range(len(trackers.tracks)):
+        for i in range(len(tracker.tracks)):
             if (len(tracker.tracks[i].trace) > 1):
-                
+                for j in range(len(tracker.tracks[i].trace)-1):
+                    # trace line draw
+                    x11 = tracker.tracks[i].trace[j][0][0]
+                    y11 = tracker.tracks[i].trace[j][1][0]
+                    x22 = tracker.tracks[i].trace[j+1][0][0]
+                    y22 = tracker.tracks[i].trace[j+1][1][0]
+    
+                    clr = tracker.tracks[i].track_id % 9
+                    cv2.line(frame, (int(x11), int(y11)), (int(x22),int(y22)), track_colors[clr], 2)
 
     
     cv2.imshow('frame', frame)
