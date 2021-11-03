@@ -57,11 +57,12 @@ class Tracker(object):
 
 		#create tracks if no track vector found
 		if(len(self.tracks)==0):
-			for i in range(len(detections)):
-				track = Track(detections[i], self.trackIdCount)
+			for i in range(len(detections)): 
+				track = Track(detections[i], self.trackIdCount) #creates an Track object for each detection ->
 				self.trackIdCount += 1
 				self.tracks.append(track)
 
+		#print(len(detections))
 		#print(len(self.tracks)) # 17 in this case
 
 		# Calculate cost using sum of square distance
@@ -72,7 +73,7 @@ class Tracker(object):
 		for i in range(len(self.tracks)):
 			for j in range(len(detections)):
 				try:
-					diff = self.tracks[i].prediction
+					diff = self.tracks[i].prediction - detections[j]
 					dist = np.sqrt(diff[0][0]*diff[0][0]+diff[1][0]*diff[1][0])
 					cost[i][j] = dist
 				except:
@@ -84,14 +85,14 @@ class Tracker(object):
 		#print(cost) # prints propper cost matrix for each detection
 
 		#Hungarian Algorithm for correct detection assignement to predicted tracks
-		assignment = []
+		assignment = [] #something broken here
 		for _ in range(N):
 			assignment.append(-1)
-		row_ind, col_ind = linear_sum_assignment(cost)
+		row_ind, col_ind = linear_sum_assignment(cost) 
 		for j in range(len(row_ind)):
 			assignment[row_ind[j]]= col_ind[j]
 
-		#print(assignment) #[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+		print(assignment) #[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
 		#Identify tracks with no assignment, if any
 		un_assigned_tracks = []

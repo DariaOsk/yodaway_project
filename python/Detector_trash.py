@@ -67,10 +67,10 @@ class Detectors(object):
         # we only care about centroids with size of bug in this example
         # recommended to be tuned based on expected object size for
         # improved performance
-        blob_radius_thresh = 20#8
+        blob_radius_thresh = 10#8
         # Find centroid for each valid contours
         for cnt in contours:
-            print(cnt)
+            #print(cnt)
             try:
                 # Calculate and draw circle
                 (x, y), radius = cv2.minEnclosingCircle(cnt)
@@ -82,7 +82,7 @@ class Detectors(object):
                     centers.append(np.round(b))
             except ZeroDivisionError:
                 pass
-
+        
         # show contours of tracking objects
         # cv2.imshow('Track Bugs', frame)
 

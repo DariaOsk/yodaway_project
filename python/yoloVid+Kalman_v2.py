@@ -178,8 +178,10 @@ while True:
             if (len(tracker.tracks[i].trace) > 1):
                 for j in range(len(tracker.tracks[i].trace)-1):
                     # trace line draw
-                    x11 = tracker.tracks[i].trace[j][0][0]
-                    y11 = tracker.tracks[i].trace[j][1][0]
+                    #x11 = tracker.tracks[i].trace[j][0][0]
+                    #y11 = tracker.tracks[i].trace[j][1][0]
+                    x11 = tracker.tracks[i].trace[j+1][0][0]+0.5
+                    y11 = tracker.tracks[i].trace[j+1][1][0]+0.5
                     x22 = tracker.tracks[i].trace[j+1][0][0]
                     y22 = tracker.tracks[i].trace[j+1][1][0]
     
