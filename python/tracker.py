@@ -85,14 +85,14 @@ class Tracker(object):
 		#print(cost) # prints propper cost matrix for each detection
 
 		#Hungarian Algorithm for correct detection assignement to predicted tracks
-		assignment = [] #something broken here
+		assignment = [] 
 		for _ in range(N):
 			assignment.append(-1)
 		row_ind, col_ind = linear_sum_assignment(cost) 
 		for j in range(len(row_ind)):
 			assignment[row_ind[j]]= col_ind[j]
 
-		print(assignment) #[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+		#print(assignment) #[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
 		#Identify tracks with no assignment, if any
 		un_assigned_tracks = []

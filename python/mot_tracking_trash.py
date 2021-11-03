@@ -2,11 +2,12 @@ import cv2
 import copy
 from Detector_trash import Detectors
 from tracker import Tracker
+import imutils
 
 
 
 def main():
-    inputvid =  "../data/vid/video_ball.avi"  #cam1_5s.mp4"
+    inputvid =  "../data/vid/cam1_5s.mp4" #video_ball.avi"  
 
     # Create opencv video capture object
     cap = cv2.VideoCapture(inputvid)
@@ -31,10 +32,10 @@ def main():
 
         # Make copy of original frame
         orig_frame = copy.copy(frame)
-
+        frame = imutils.resize(frame, width = 800)
 
         # Detect and return centeroids of the objects in the frame
-        centroids = detector.Detect(frame)
+        centroids = detector.Detect_yolo(frame)
         #print(len(centroids))
 
         # If centroids are detected then track them
@@ -50,8 +51,8 @@ def main():
                     for j in range(len(tracker.tracks[i].trace)-1):
                         # Draw trace line
                         #print(len(tracker.tracks[i].trace))
-                        x1 = tracker.tracks[i].trace[j+1][0][0]+0.5
-                        y1 = tracker.tracks[i].trace[j+1][1][0]+0.5
+                        x1 = tracker.tracks[i].trace[j][0][0]+0.5
+                        y1 = tracker.tracks[i].trace[j][1][0]+0.5
                         #print(x1,y1)
                         x2 = tracker.tracks[i].trace[j+1][0][0]
                         y2 = tracker.tracks[i].trace[j+1][1][0]
@@ -64,7 +65,7 @@ def main():
             cv2.imshow('Tracking', frame)
         
         # Slower the FPS
-        cv2.waitKey(50)
+        #cv2.waitKey(20)
 
         if cv2.waitKey(2) & 0xFF == ord('q'):
             break
