@@ -16,7 +16,7 @@ from numpy.lib.type_check import _nan_to_num_dispatcher
 #from utils import *
 
 #instead of argparse fixed values  --output output/wildrack_MOT.avi --yolo yolo-coco\venvYodaway\code\yolo>
-inputvid =  "../data/vid/cam1_5s.mp4"
+inputvid =  "../data/vid/annotated_seq1.mp4" #cam1_5s.mp4"
 output_dir = "./output"
 yolo_dir = "../yolov3"
 confidence = 0.7 #default 0.5
@@ -27,11 +27,17 @@ tracker = Tracker(160,30,5,100)
 skip_frame_count = 0
 track_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
                 (0, 255, 255), (255, 0, 255), (255, 127, 255),
-                (127, 0, 255), (127, 0, 127)]
+                (127, 0, 255), (127, 0, 127),(100, 100, 100),
+                (160, 135, 10), (12, 20, 0), (100, 30, 0),
+                (100, 200, 355),(134, 20, 0), (0, 0, 1)]
+            # -> write something like : len(detections) = track_colors > [fill random(0,255)] but only for first frame 
 pause = False
+person_id = 14
+
 #load coco class labels 
 labelsPath = os.path.sep.join([yolo_dir, "coco.names"])
 LABELS = open(labelsPath).read().strip().split("\n")
+
 
 #initilize colors for labels
 np.random.seed(42)
@@ -93,13 +99,16 @@ while True:
     classIDs = []
     centroids = []
 
+
     #loop over each output layer 
     for output in layerOutputs:
         #loop over each detection
         for detection in output:
+
             #extract classID and confidence of current detection
             scores = detection[5:]
             classID = np.argmax(scores)
+
             conf = scores[classID]
 
             # filter weak predictions
@@ -118,8 +127,14 @@ while True:
                 bboxes.append([x,y,int(width), int(height)])
                 confs.append(float(conf))
                 classIDs.append(classID)
+    
+    #print(classIDs[0])
+    #set other class predictions to 0 so only person is detected
+    # for i in range(len(classIDs)):
+    #     if classIDs[i] != person_id :
+    #         scores[i] = 0
 
-        
+
     # non-maxima suppression=filtering out unnecessary boxes
     idxs = cv2.dnn.NMSBoxes(bboxes, confs, confidence, threshold)
     #print(len(idxs))
@@ -153,40 +168,24 @@ while True:
             txt = "person: {}".format(round(confs[i],2))
             cv2.putText(frame, txt, (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
             
-    #Applying Kalmanfilter to yolo detector    /  store centroids in dict  safe pred in blob object
-    # if (len(centroids) > 0):
-    #         for i in centroids:
-            # Predict
-            #(x_, y_) = KF.predict()
-            
-            # Draw a rectangle as the predicted object position
-            #cv2.rectangle(frame, (int(x_-30), int(y_-50)), (int(x_+30), int(y_+50)), (255, 0, 0), 2)
-            
-            # Update Kalman Trajectory
-            #(x1, y1) = KF.update([centroidArray[0],centroidArray[1]])#KF.update(centers[0])
-            #print(centroidArray)
-            # Draw a rectangle as the estimated object position
-            #cv2.rectangle(frame, ( int(x1-30), int(y1-50)), (int(x1+30), int(y1+50)), (0, 0, 255), 2)
-            #cv2.putText(frame, "Estimated Position", (int(x1+30), int(y1+50)), 0, 0.5, (0, 0, 255), 2)
-            #cv2.putText(frame, "Predicted Position", (int(x_+30), int(y_)), 0, 0.5, (255, 0, 0), 2)
-            #cv2.putText(frame, "Measured Position", (int(centroidArray[0]) + 15, int(centroidArray[1]) - 15), 0, 0.5, (0,191,255), 2)
-
     if (len(centroids) >0):
         tracker.Update(centroids)
-
         for i in range(len(tracker.tracks)):
             if (len(tracker.tracks[i].trace) > 1):
                 for j in range(len(tracker.tracks[i].trace)-1):
                     # trace line draw
-                    #x11 = tracker.tracks[i].trace[j][0][0]
-                    #y11 = tracker.tracks[i].trace[j][1][0]
-                    x11 = tracker.tracks[i].trace[j+1][0][0]+0.5
-                    y11 = tracker.tracks[i].trace[j+1][1][0]+0.5
+                    x11 = tracker.tracks[i].trace[j][0][0]
+                    y11 = tracker.tracks[i].trace[j][1][0]
+                    #x11 = tracker.tracks[i].trace[j+1][0][0]+0.5
+                    #y11 = tracker.tracks[i].trace[j+1][1][0]+0.5
                     x22 = tracker.tracks[i].trace[j+1][0][0]
                     y22 = tracker.tracks[i].trace[j+1][1][0]
     
-                    clr = tracker.tracks[i].track_id % 9
-                    cv2.line(frame, (int(x11), int(y11)), (int(x22),int(y22)), track_colors[clr], 2)
+                    clr = tracker.tracks[i].track_id % 15
+                    cv2.line(frame, (int(x11), int(y11)), (int(x22),int(y22)), track_colors[clr], 4)
+                    #cv2.rectangle(frame, (int(x22)-50, int(y22)-70), (int(x22)+50, int(y22)+70), track_colors[clr], 1)
+                    pplcount = str(i)
+                    cv2.putText(frame, pplcount, (int(x22), int(y22)+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
     
     cv2.imshow('frame', frame)
