@@ -43,7 +43,8 @@ def lk(videopath):
     # Edge detection using Canny function
     gray_o = cv2.Canny(gray_o, **c_params)
     p0 = cv2.goodFeaturesToTrack(gray_o, mask= None, **f_params)
-    
+    print(p0) #p0 is a list of lists [[[100. 200.]]...[300. 400.]]]
+
     #mask for drawing
     mask = np.zeros_like(frame_o)
 
@@ -119,7 +120,7 @@ def lk(videopath):
                 break    
             
             time_elapsed += 0.1 #time_elapsed #t2-t
-            print(time_elapsed)
+            print(np.round(time_elapsed))
 
         else:
             break

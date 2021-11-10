@@ -47,6 +47,10 @@ vs = cv2.VideoCapture(inputvid)
 writer = None
 (W,H) = (None, None)
 
+#optical flow features
+centroids = []
+p0 = centroids
+
 #count total nr of frames in video
 try:
     prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT if imutils.is_cv2() \
@@ -57,6 +61,7 @@ except:
     print("INFO: could not determine number of frames")
     print("INFO: no apporx complection time can be provided")
     toatal = -1
+
 
 # frameloop
 while True: 
@@ -97,7 +102,7 @@ while True:
     bboxes = []
     confs = []
     classIDs = []
-    centroids = []
+    #centroids = []
 
     #loop over each output layer 
     for output in layerOutputs:
