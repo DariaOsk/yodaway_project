@@ -93,7 +93,7 @@ class Tracker(object):
 			assignment[row_ind[j]]= col_ind[j]
 
 		#print(assignment) #[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-
+		
 		#Identify tracks with no assignment, if any
 		un_assigned_tracks = []
 		for i in range(len(assignment)):
@@ -120,7 +120,7 @@ class Tracker(object):
 					del assignment[id]
 				else:
 					print("ERROR: id is greater than length of tracks")
-			
+		
 		# look for un-assigned detections
 		un_assigned_detects = []
 		for i in range(len(detections)):

@@ -9,10 +9,14 @@ import numpy as np
 import argparse
 import os
 import imutils
+import pdb
+import motmetrics as mm
 import time
 from Kalmanfilter_remake import KalmanFilter
 from tracker import Tracker
 from numpy.lib.type_check import _nan_to_num_dispatcher
+from precision_calc import calc_dist_points
+from reading_gt import dist_from_gt,draw_bbox_gt
 #from utils import *
 
 #instead of argparse fixed values  --output output/wildrack_MOT.avi --yolo yolo-coco\venvYodaway\code\yolo>
@@ -21,7 +25,7 @@ output_dir = "./output"
 yolo_dir = "../yolov3"
 confidence = 0.7 #default 0.5
 threshold = 0.3 #default 0.3
-tracker = Tracker(160,30,5,100)
+tracker = Tracker(160,30,5,0)
 skip_frame_count = 0
 track_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
                 (0, 255, 255), (255, 0, 255), (255, 127, 255),
@@ -32,10 +36,12 @@ track_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
 pause = False
 person_id = 14
 
+#create accumulator that will be updated during each frame
+acc = mm.MOTAccumulator(auto_id=True)
+
 #load coco class labels 
 labelsPath = os.path.sep.join([yolo_dir, "coco.names"])
 LABELS = open(labelsPath).read().strip().split("\n")
-
 
 #initilize colors for labels
 np.random.seed(42)
@@ -57,17 +63,7 @@ layerNames = [layerNames[i[0]-1] for i in net.getUnconnectedOutLayers()]
 vs = cv2.VideoCapture(inputvid)
 writer = None
 (H,W) = (None, None)
-
-# #count total nr of frames in video
-# try:
-#     prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT if imutils.is_cv2() \
-#         else cv2.CAP_PROP_FRAME_COUNT
-#     total = int(vs.get(prop))
-#     print("INFO: {} total frames in video").format(total)
-# except:
-#     print("INFO: could not determine number of frames")
-#     print("INFO: no apporx complection time can be provided")
-#     toatal = -1
+frame_cnt = 0
 
 # frameloop
 while True: 
@@ -81,9 +77,6 @@ while True:
     if W is None or H is None:
         (H,W) = frame.shape[:2]
 
-    # Make copy of original frame
-    #orig_frame = copy.copy(frame)
-    
     # blob for input frame and forward pass to YOLO object detector, with bounding boxes + probabilities
     blob = cv2.dnn.blobFromImage(frame, 1/255.0, (416,416), swapRB=True, crop=False)
     net.setInput(blob)
@@ -94,10 +87,11 @@ while True:
     # init of bboxes, confidences(=probabilities) and class IDs
     bboxes = []
     confs = []
-    classIDs = []
-    centroids = []
-
-
+    classIDs = [] #real classIDs
+    centroids = [] #real class 
+    hypothesis_xy = [] #[[x1,y1],[x2,y2]] # distances from object classID to detected objects
+    hypothesis_ids = [] 
+    
     #loop over each output layer 
     for output in layerOutputs:
         #loop over each detection
@@ -167,8 +161,12 @@ while True:
             txt = "{}: {:.4f}".format(LABELS[classIDs[i]],confs[i])
             txt = "person: {}".format(round(confs[i],2))
             cv2.putText(frame, txt, (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-            
-    if (len(centroids) >0):
+
+    temp_id = []
+    temp_centr2 = []
+    temp_centr = [] 
+    centr_frame = 0       
+    if (len(centroids) > 0):
         tracker.Update(centroids)
         for i in range(len(tracker.tracks)):
             if (len(tracker.tracks[i].trace) > 1):
@@ -180,26 +178,45 @@ while True:
                     #22 old tracker points
                     x22 = tracker.tracks[i].trace[j+1][0][0]
                     y22 = tracker.tracks[i].trace[j+1][1][0]
-    
-                    clr = tracker.tracks[i].track_id % 15
+                    #define the color 
+                    clr = tracker.tracks[i].track_id % 15 
                     #cv2.line(frame, (int(x11), int(y11)), (int(x22),int(y22)), track_colors[clr], 4)
-                    
-                    #cv2.rectangle(frame, (int(x22)-50, int(y22)-70), (int(x22)+50, int(y22)+70), track_colors[clr], 1)
-                    pplcount = str(i)
-                    #cv2.putText(frame, pplcount, (int(x22), int(y22)+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                    cv2.putText(frame, ".", (int(x11), int(y11)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 6)
+                    #cv2.rectangle(frame, (int(x22)-50, int(y22)-70), (int(x22)+50, int(y22)+70), track_colors[clr], 1)                    
+                    #cv2.putText(frame, ".", (int(x11), int(y11)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 6)
 
                     if (x11>x22):
+                        cv2.putText(frame, ".", (int(x22), int(y22)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,200,210), 6)
+                    if (x22>x11):
                         cv2.putText(frame, ".", (int(x22), int(y22)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 6) 
-                    else:
-                        cv2.putText(frame, ".", (int(x22), int(y22)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,0,100), 6)
+                    
+                    centr_frame = [x22,y22]
+                    temp_centr.append(centr_frame)
+                    
+                temp_centr2.append(temp_centr[0])
+                temp_id.append(tracker.tracks[i].track_id)
+                temp_centr = []
+    hypothesis_ids.append(temp_id)
+    hypothesis_xy = temp_centr2
+    hypothesis_ids = hypothesis_ids[0]
+    hypothesis_xy = hypothesis_xy#[0]
+        #pplcount = str(i)
+        #cv2.putText(frame, pplcount, (int(x22), int(y22)+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    
+    cv2.putText(frame, "Enter: Green", (20,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0),1) #B
+    cv2.putText(frame, "Exit: Yellow", (20,80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,200,210),1) #G
 
-    cv2.putText(frame, "Enter: Blue", (20,500), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0),3) #B
-    cv2.putText(frame, "Exit: Yellow", (200,540), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,0,100),3) #G
+    #dist_h_gt = dist_from_gt(hypothesis_xy)
+    print("Hypothesis_ids",hypothesis_ids)
+    print("Hypothesis_xy",hypothesis_xy)
+    draw_bbox_gt(frame,frame_cnt)
+    distances, o_ids = dist_from_gt(frame_cnt, hypothesis_xy)
+    print("distances: ", distances)
+    print("original id:", o_ids)
+    #acc.update(o_ids, hypothesis_ids, distances)
 
-    cv2.imshow('frame', frame)
-
-    # #check writer
+    cv2.imshow('frame', frame) 
+    frame_cnt +=1
+    #check writer
     # if writer is None:
     #     #init video writer
     #     fourcc = cv2.VideoWriter_fourcc(*"MJPG")
