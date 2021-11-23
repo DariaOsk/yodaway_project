@@ -13,7 +13,7 @@ import cv2
 bb_in_frame = []
 
 ano_txt = "../data/img/tud_cross_gt.txt"
-max_distance = 150.  #maximal allowed distance between gt and hypothesis centroids
+max_distance = 10000.  #maximal allowed distance between gt and hypothesis centroids
 test = [[25.0, 74.0], [-28.5, -88.0], [-28.0, -82.0], [29.0, 83.0], [-29.0, -95.5], [29.5, -81.0], [-27.5, -73.5]]
 test2 = [[364.0, 204.0], [427.0, 237.0], [140.0, 210.0], [166.0, 243.0], [201.0, 215.0], [237.0, 250.0]]
 # def replaceAll(file,searchExp,replaceExp):
@@ -75,10 +75,10 @@ def coord_from_gt():
                     obj_ids_frame.append(o)
                     o+=1
                     txtlines.append(objectstr)
-                temp_obj_centr = obj_centroids_frame
-                temp_obj_ids = obj_ids_frame
-                obj_centroids_frame = []
-                obj_ids_frame = []
+            temp_obj_centr.append(obj_centroids_frame)
+            temp_obj_ids.append(obj_ids_frame)
+            obj_centroids_frame = []
+            obj_ids_frame = []
         total_obj_ids.append(temp_obj_ids)
         total_obj_centroids.append(temp_obj_centr)
             
@@ -90,7 +90,7 @@ def coord_from_gt():
             #for i in txtlines:
         #    outfile.writelines(txtlines)#"%s\n" % t for t in txtlines)
 
-    return total_obj_centroids, total_obj_ids, txtlines
+    return total_obj_centroids[0], total_obj_ids[0], txtlines
 
 #<frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z> 
 #The world coordinates x,y,z
@@ -136,18 +136,33 @@ def draw_bbox_gt(frame_vid, frame_cnt_vid):
 def dist_from_gt(frame_cnt_vid, hypothesis_c):
     lst_dist = []
     obj_centroids,object_ids,_ = coord_from_gt() 
-    for i in range(len(object_ids)):
-        if (i == frame_cnt_vid):
-            for id in object_ids:
-                print("obj_centroid", obj_centroids[i], "hypothesis_centroid",hypothesis_c)
-                o = np.array(obj_centroids[i])
+    for i in range(len(obj_centroids)):
+        if (frame_cnt_vid == i):
+            o = np.array(obj_centroids[i])
+            h = hypothesis_c
+            original_ids = object_ids[i] # check if the lengths of object_centroids and obj_ids are same?
+            print("Originals:",obj_centroids[i])
+            print("Hypothesis:",hypothesis_c)
+            #print(object_ids[i])
 
-            for centr in hypothesis_c:
-                h = np.array(centr)
-                C = mm.distances.norm2squared_matrix(o,h, max_d2=max_distance)
-                lst_dist.append(C)
+    #max_d2 : float
+    #    Maximum tolerable squared Euclidean distance. Object / hypothesis points
+    #    with larger distance are set to np.nan signalling do-not-pair. Defaults
+    #    to +inf
+            C = mm.distances.norm2squared_matrix(o,h)#, max_d2=max_distance)
+            return C, original_ids
+    #for i in range(len(object_ids)):
+    #    if (i == frame_cnt_vid):
+    #        for id in object_ids:
+    #            print("obj_centroid", obj_centroids[i], "hypothesis_centroid",hypothesis_c)
+    #            o = np.array(obj_centroids[i])
 
-            return lst_dist, id
+    #        for centr in hypothesis_c:
+    #            h = np.array(centr)
+    #            C = mm.distances.norm2squared_matrix(o,h, max_d2=max_distance)
+    #            lst_dist.append(C)
+
+        #return lst_dist #, id
    
 def rerewrite_new_gt():
     #data = read_gt()

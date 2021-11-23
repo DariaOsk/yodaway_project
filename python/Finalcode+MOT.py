@@ -15,7 +15,6 @@ import time
 from Kalmanfilter_remake import KalmanFilter
 from tracker import Tracker
 from numpy.lib.type_check import _nan_to_num_dispatcher
-from precision_calc import calc_dist_points
 from reading_gt import dist_from_gt,draw_bbox_gt
 #from utils import *
 
@@ -198,24 +197,40 @@ while True:
     hypothesis_ids.append(temp_id)
     hypothesis_xy = temp_centr2
     hypothesis_ids = hypothesis_ids[0]
-    hypothesis_xy = hypothesis_xy#[0]
-        #pplcount = str(i)
-        #cv2.putText(frame, pplcount, (int(x22), int(y22)+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                    
+       
     cv2.putText(frame, "Enter: Green", (20,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0),1) #B
     cv2.putText(frame, "Exit: Yellow", (20,80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,200,210),1) #G
-
-    #dist_h_gt = dist_from_gt(hypothesis_xy)
-    print("Hypothesis_ids",hypothesis_ids)
-    print("Hypothesis_xy",hypothesis_xy)
+    for i in hypothesis_xy:
+        print(i)
+    
+    #visualization of the ground truth
     draw_bbox_gt(frame,frame_cnt)
-    distances, o_ids = dist_from_gt(frame_cnt, hypothesis_xy)
-    print("distances: ", distances)
-    print("original id:", o_ids)
-    #acc.update(o_ids, hypothesis_ids, distances)
+
+    # application of the MOT metrics by calculating the distances btw hypothesis and gt
+    distances, gt_ids = dist_from_gt(frame_cnt, hypothesis_xy)
+    # populating accumulator for later evaluation
+    frameid = acc.update(gt_ids, hypothesis_ids, distances)
+    print(acc.mot_events)
 
     cv2.imshow('frame', frame) 
     frame_cnt +=1
+
+    if frame_cnt == 20:
+        mh = mm.metrics.create()
+        # summary = mh.compute(acc, metrics=['num_frames', 'mota', 'motp'], name='acc')
+        # strsummary = mm.io.render_summary(summary,
+        #                                   formatters={'mota' : '{:.2%}'.format},
+        #                                   namemap={'mota': 'MOTA', 'motp' : 'MOTP'})
+
+        summary = mh.compute_many(  [acc, acc.events.loc[0:1]],
+                                    metrics=mm.metrics.motchallenge_metrics,
+                                    names=['full', 'part'])
+
+        strsummary = mm.io.render_summary(  summary,
+                                            formatters=mh.formatters,
+                                            namemap=mm.io.motchallenge_metric_names)
+        print(strsummary)
+        break
     #check writer
     # if writer is None:
     #     #init video writer

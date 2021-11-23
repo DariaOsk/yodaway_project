@@ -90,10 +90,10 @@ def kalman_filter_tracker():
 
         pt = (frameCounter, pos[0], pos[1])
         if frameCounter != 256:
-            print("Clown A")
+            print("A")
             #output.write("%d,%d,%d\n" % pt) # Write as frame_index,pt_x,pt_y
         else:
-            print("Clown B")
+            print("B")
             #output.write("%d,%d,%d" % pt)  # Write as frame_index,pt_x,pt_y
         frameCounter += 1
     # output.close()
