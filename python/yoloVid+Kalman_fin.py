@@ -14,6 +14,7 @@ from tracker import Tracker
 from numpy.lib.type_check import _nan_to_num_dispatcher
 #from utils import *
 
+
 #instead of argparse fixed values  --output output/wildrack_MOT.avi --yolo yolo-coco\venvYodaway\code\yolo>
 inputvid =  "../data/vid/annotated_seq1.mp4" #cam1_5s.mp4"
 output_dir = "./output"
