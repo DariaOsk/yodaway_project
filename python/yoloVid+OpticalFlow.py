@@ -15,12 +15,13 @@ from Kalmanfilter import Kalmanfilter
 from numpy.lib.type_check import _nan_to_num_dispatcher
 
 #instead of argparse fixed values  --output output/wildrack_MOT.avi --yolo yolo-coco\venvYodaway\code\yolo>
-inputvid =  "./videos/cam1_5s.mp4"
+inputvid =  "../data/vid/annotated_seq1.mp4" #cam1_5s.mp4"
 output_dir = "./output"
-yolo_dir = "./yolo-coco"
+yolo_dir = "../yolov3"
 confidence = 0.5 #default 0.5
 threshold = 0.3 #default 0.3
 KF = Kalmanfilter(0.1, 1, 1, 1, 0.1,0.1)
+color = np.random.randint(0, 100,(100,3))
 
 #load coco class labels 
 labelsPath = os.path.sep.join([yolo_dir, "coco.names"])
@@ -51,16 +52,29 @@ writer = None
 centroids = []
 p0 = centroids
 
-#count total nr of frames in video
-try:
-    prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT if imutils.is_cv2() \
-        else cv2.CAP_PROP_FRAME_COUNT
-    total = int(vs.get(prop))
-    print("INFO: {} total frames in video").format(total)
-except:
-    print("INFO: could not determine number of frames")
-    print("INFO: no apporx complection time can be provided")
-    toatal = -1
+#parameters for canny corner detection 
+c_params = dict(    threshold1=50,
+                    threshold2=190,
+                    edges=3,
+                    )
+
+#Lucas Kanade optical flow
+lk_params = dict(   winSize = (7,7),
+                    maxLevel=2,
+                    criteria = (cv2.TERM_CRITERIA_EPS | 
+                                cv2.TERM_CRITERIA_COUNT, 10, 0.03),
+                     )
+#corner detection from first frame
+next, frame_o = vs.read()
+#gray_o = cv2.cvtColor(frame_o, cv2.COLOR_BGR2GRAY)
+gray_o = cv2.cvtColor(frame_o, cv2.COLOR_BGR2HSV)
+# Edge detection using Canny function -> don't need that right?
+#gray_o = cv2.Canny(gray_o, **c_params)
+#p0 = cv2.goodFeaturesToTrack(gray_o, mask= None, **f_params)
+#print(p0) #p0 is a list of lists [[[100. 200.]]...[300. 400.]]]
+
+#mask for drawing
+mask = np.zeros_like(frame_o)
 
 
 # frameloop
@@ -82,13 +96,28 @@ while True:
             # vector of next points (p1), 
             # output status vector (st) (sets each element to 1 if flow for feature found, sonst 0), 
             # output errors vector (err)
-            # p1, st, err = cv2.calcOpticalFlowPyrLK(
-            #                 gray_o, 
-            #                 gray, 
-            #                 p0, 
-            #                 None, 
-            #                 **lk_params
-            #             )
+    print("P0: ",p0) 
+
+    p1, st, err = cv2.calcOpticalFlowPyrLK( gray_o, 
+                                            gray, 
+                                            p0, 
+                                            None, 
+                                            **lk_params
+                                            )
+    
+     #select good points
+    good_new = p1[st == 1]
+    good_old = p0[st == 1]
+
+    #draw tracks i
+    for i, (new, old) in enumerate(zip(good_new, good_old)):
+        (a,b) = new.ravel()
+        (c,d) = old.ravel() #ravel returns flattened vector of 1D
+        mask = cv2.line(mask,
+                        (int(a),int(b)), #need to cast into int()
+                        (int(c),int(d)),
+                        color[i].tolist(), 2)
+
 #-------------------------------------------------------------------------------------------------------
 
     # blob for input frame and forward pass to YOLO object detector, with bounding boxes + probabilities
@@ -180,8 +209,14 @@ while True:
                 cv2.putText(frame, "Measured Position", (int(centroids[0][0]) + 15, int(centroids[0][1]) - 15), 0, 0.5, (0,191,255), 2)
     
     
-    
-    cv2.imshow('frame', frame)
+        
+    #display
+    img = cv2.add(frame,mask)
+    cv2.imshow("LUCAS-KANADE", img)
+
+    #Update prev frame and points
+    gray_o = gray.copy()
+    p0 = good_new.reshape(-1,1,2)
 
     # #check writer
     # if writer is None:

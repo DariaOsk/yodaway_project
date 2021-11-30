@@ -175,6 +175,41 @@ Kamal says: Tracker is outdated - public databases require state of the art meth
 		-> Laura says: only face detectro right now.
 
 Meeting 10.11: 
--> what are the actual 
+-> what other trackers do they have? 
+-> In what manner will my tracker improve the performance?
+-> Where can I test my tracker
+-> How can I implement it into the pipeline?
 
-What is the bigger picture - where does my tracker fit in? What is it going to improve? 
+Accuracy difference from yodaways old trackers - and also runtime 
+Track people 
+Yodaways sytem is dynamic - their primary goal is to look for the accuracy in the tracking of detected people - 
+if the trackers accuracy is so important to their main goal the system can be adapted to what element is most important.
+So computational resources can be allocated for a rather computationally intensive state of the art deep learning tracker 
+or if the trackers are just as good as the detector then a rather lightweight tracker will be included.
+
+The Goal: three different trackers need to be compared - optical flow, kalman, deepsort -> they need to be evaluated
+Evaluation will happen on their system with: 1. mtcnn -> pip install mvt -> their face detector and their trackers
+					     2. mtcnn -> Their detector and all my trackers
+Evaluation will happen on my system with:    3. yolo -> My detector and all my trackers
+				
+maybe try also cvlib yolo and emtcnn instead of the whole thing I programmed by myself	     
+opencv -> csrt
+
+Technical Report:
+- tracking-by-detection
+- detection-by-tracking 
+- trackers for limited devices
+
+Python metrics lib (same style as MOT challenge metrics)
+https://github.com/cheind/py-motmetrics
+
+Human computer interaction part of the paper - security concerns and re-identitification without personal data  
+
+Questions for Kamal: How is the focus on integrating a human computer interaction focus on the topic
+		     How long should the report be
+		     
+			I am progress with the detector - tracker - implementation
+			RN I am implementing the MOT evaluation for my project
+
+What is the threshold in the MOT calculation? -> visualize it some
+				

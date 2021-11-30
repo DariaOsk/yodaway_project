@@ -12,7 +12,6 @@ import imutils
 import pdb
 import motmetrics as mm
 import time
-from Kalmanfilter_remake import KalmanFilter
 from tracker import Tracker
 from numpy.lib.type_check import _nan_to_num_dispatcher
 from reading_gt import dist_from_gt,draw_bbox_gt
@@ -60,6 +59,19 @@ layerNames = [layerNames[i[0]-1] for i in net.getUnconnectedOutLayers()]
 
 #init of videostream 
 vs = cv2.VideoCapture(inputvid)
+
+#count total nr of frames in video
+try:
+    prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT if imutils.is_cv2() \
+        else cv2.CAP_PROP_FRAME_COUNT
+    total = int(vs.get(prop))
+    print("INFO: {} total frames in video").format(total)
+except:
+    print("INFO: could not determine number of frames")
+    print("INFO: no apporx complection time can be provided")
+    toatal = -1
+
+
 writer = None
 (H,W) = (None, None)
 frame_cnt = 0
@@ -231,19 +243,20 @@ while True:
                                             namemap=mm.io.motchallenge_metric_names)
         print(strsummary)
         break
+
     #check writer
-    # if writer is None:
-    #     #init video writer
-    #     fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-    #     writer = cv2.VideoWriter(output_dir, fourcc, 30, (frame.shape[1], frame.shape[0]), True)
+    if writer is None:
+        #init video writer
+        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+        writer = cv2.VideoWriter(output_dir, fourcc, 30, (frame.shape[1], frame.shape[0]), True)
 
-    #     #single frame processing
-    #     if total>0:
-    #         elap = (end-start)
-    #         print("INFO: single frame took {:.4f} seconds".format(elap))
-    #         print("INFO: estimated toatal time to finish {:.4f}".format(elap*total))
+        #single frame processing
+        if total>0:
+            elap = (end-start)
+            print("INFO: single frame took {:.4f} seconds".format(elap))
+            print("INFO: estimated toatal time to finish {:.4f}".format(elap*total))
 
-    # writer.write(frame)
+    writer.write(frame)
 
     if cv2.waitKey(2) & 0xFF == ord('q'):
         break

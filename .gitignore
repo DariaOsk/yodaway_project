@@ -138,3 +138,14 @@ dmypy.json
 cython_debug/
 
 # Ignore videos
+*.mp4
+annotated_seq1.mp4
+cam1_5s.mp4
+TestOnePlus1_out.mp4
+
+#ignore MOT data
+tud-crossing-sequence/
+MOT15/
+MOT16/
+TestOnePlus1_data/
+TestOnePlus1/
