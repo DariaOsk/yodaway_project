@@ -9,12 +9,15 @@ class KalmanFilter(object):
     """
 
     def __init__(self):
-        """Initialize variable used by Kalman Filter class
-        Args:
-            None
-        Return:
-            None
         """
+        :param dt: sampling time (time for 1 cycle) = delta time 
+        :param u_x: acceleration in x-direction
+        :param u_y: acceleration in y-direction
+        :param std_acc: process noise magnitude
+        :param x_std_meas: standard deviation of the measurement in x-direction
+        :param y_std_meas: standard deviation of the measurement in y-direction
+        """
+
         self.dt = 0.005  # delta time
 
         self.A = np.array([[1, 0], [0, 1]])  # matrix in observation equations

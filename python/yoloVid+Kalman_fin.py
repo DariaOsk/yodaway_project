@@ -10,21 +10,32 @@ import argparse
 import os
 import imutils
 import time
-from Kalmanfilter import Kalmanfilter
-
+from tracker import Tracker
 from numpy.lib.type_check import _nan_to_num_dispatcher
+#from utils import *
+
 
 #instead of argparse fixed values  --output output/wildrack_MOT.avi --yolo yolo-coco\venvYodaway\code\yolo>
-inputvid =  "../data/vid/cam1_5s.mp4"
+inputvid =  "../data/vid/cam1_5s.mp4" #cam1_5s.mp4"
 output_dir = "./output"
 yolo_dir = "../yolov3"
-confidence = 0.5 #default 0.5
+confidence = 0.7 #default 0.5
 threshold = 0.3 #default 0.3
-KF = Kalmanfilter(0.1, 1, 1, 1, 0.1,0.1)
+tracker = Tracker(160,30,5,100)
+skip_frame_count = 0
+track_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
+                (0, 255, 255), (255, 0, 255), (255, 127, 255),
+                (127, 0, 255), (127, 0, 127),(100, 100, 100),
+                (160, 135, 10), (12, 20, 0), (100, 30, 0),
+                (100, 200, 355),(134, 20, 0), (0, 0, 1)]
+            # -> write something like : len(detections) = track_colors > [fill random(0,255)] but only for first frame 
+pause = False
+person_id = 14
 
 #load coco class labels 
 labelsPath = os.path.sep.join([yolo_dir, "coco.names"])
 LABELS = open(labelsPath).read().strip().split("\n")
+
 
 #initilize colors for labels
 np.random.seed(42)
@@ -35,7 +46,7 @@ weightsPath = os.path.sep.join([yolo_dir, "yolov3.weights"])
 configPath = os.path.sep.join([yolo_dir, "yolov3.cfg"])
 
 # load YOLO detector trained on COCO dataset
-print("[INFO] load Yolo from disk..")
+print("Loading YoloV3")
 net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
 
 # dermine output layer names needed from YOLO
@@ -45,18 +56,18 @@ layerNames = [layerNames[i[0]-1] for i in net.getUnconnectedOutLayers()]
 #init of videostream 
 vs = cv2.VideoCapture(inputvid)
 writer = None
-(W,H) = (None, None)
+(H,W) = (None, None)
 
-#count total nr of frames in video
-try:
-    prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT if imutils.is_cv2() \
-        else cv2.CAP_PROP_FRAME_COUNT
-    total = int(vs.get(prop))
-    print("INFO: {} total frames in video").format(total)
-except:
-    print("INFO: could not determine number of frames")
-    print("INFO: no apporx complection time can be provided")
-    toatal = -1
+# #count total nr of frames in video
+# try:
+#     prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT if imutils.is_cv2() \
+#         else cv2.CAP_PROP_FRAME_COUNT
+#     total = int(vs.get(prop))
+#     print("INFO: {} total frames in video").format(total)
+# except:
+#     print("INFO: could not determine number of frames")
+#     print("INFO: no apporx complection time can be provided")
+#     toatal = -1
 
 # frameloop
 while True: 
@@ -70,6 +81,9 @@ while True:
     if W is None or H is None:
         (H,W) = frame.shape[:2]
 
+    # Make copy of original frame
+    #orig_frame = copy.copy(frame)
+    
     # blob for input frame and forward pass to YOLO object detector, with bounding boxes + probabilities
     blob = cv2.dnn.blobFromImage(frame, 1/255.0, (416,416), swapRB=True, crop=False)
     net.setInput(blob)
@@ -83,20 +97,32 @@ while True:
     classIDs = []
     centroids = []
 
+
     #loop over each output layer 
     for output in layerOutputs:
         #loop over each detection
         for detection in output:
+
             #extract classID and confidence of current detection
             scores = detection[5:]
             classID = np.argmax(scores)
+
             conf = scores[classID]
 
+            
+            # - there apparently is no way to exclude the detection itself
+            # which could make the detector obviously slow and unfit for real time (only) human detection
+            # Either yolo needs to be retrained only on humans or another detector will be used.
+            # exclude all the other classes so only person is shown 
+            if (classID != 0):
+                conf = 0
+
+            #print(classID)
             # filter weak predictions
             # probability greater than minimum probability
             if conf > confidence:
                 #scale bbox coordinates back relative to img siye
-                # Yolo returns center (x,y)-coords of bbox enhanced by box width and height
+                #Yolo returns center (x,y)-coords of bbox enhanced by box width and height
                 box = detection[0:4] * np.array([W,H,W,H])
                 (centerX, centerY, width, height) = box.astype("int")
 
@@ -108,11 +134,10 @@ while True:
                 bboxes.append([x,y,int(width), int(height)])
                 confs.append(float(conf))
                 classIDs.append(classID)
-
-        
+    
     # non-maxima suppression=filtering out unnecessary boxes
     idxs = cv2.dnn.NMSBoxes(bboxes, confs, confidence, threshold)
-    print(len(idxs))
+    #print(len(idxs))
     # ensure that detection exists
     if len(idxs) > 0:        
         # loop over indexes 
@@ -124,12 +149,13 @@ while True:
             # extract centroid positions
             cx = int(x + ((x+w)-(x))/2)
             cy = int((y+h) - ((y+h)-y)/2)
-
+            #print(cx,cy)
             # include box centroids into array that will be passed to KalmanFilter
-            centroids.append(np.array([[cx], [cy]]))
+            centroids.append(np.round(np.array([[cx], [cy]])))
+            centroidArray = np.array([[cx],[cy]])
 
             #different colours - not necessary if classID only 1 (person)
-            #color = [int(c) for c in COLORS[classIDs[i]]]
+            color = [int(c) for c in COLORS[classIDs[i]]]
             color = (0,200,200)
             # draw bbox rectange and label on img
             cv2.rectangle(frame, (x,y), (x+w, y+h), color, 2)
@@ -138,30 +164,39 @@ while True:
             cv2.circle(frame, (cx,cy), 1, (0,0,250),5)
 
             # if only person then not necessary:
-            #txt = "{}: {:.4f}".format(LABELS[classIDs[i]],confs[i])
-            txt = "person"
+            txt = "{}: {:.4f}".format(LABELS[classIDs[i]],confs[i])
+            txt = "person: {}".format(round(confs[i],2))
             cv2.putText(frame, txt, (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            
+    if (len(centroids) >0):
+        tracker.Update(centroids)
+        for i in range(len(tracker.tracks)):
+            if (len(tracker.tracks[i].trace) > 1):
+                for j in range(len(tracker.tracks[i].trace)-1):
+                    # trace line draw
+                    #11 new updates
+                    x11 = tracker.tracks[i].trace[j][0][0]
+                    y11 = tracker.tracks[i].trace[j][1][0]
+                    #22 old tracker points
+                    x22 = tracker.tracks[i].trace[j+1][0][0]
+                    y22 = tracker.tracks[i].trace[j+1][1][0]
+    
+                    clr = tracker.tracks[i].track_id % 15
+                    #cv2.line(frame, (int(x11), int(y11)), (int(x22),int(y22)), track_colors[clr], 4)
+                    
+                    #cv2.rectangle(frame, (int(x22)-50, int(y22)-70), (int(x22)+50, int(y22)+70), track_colors[clr], 1)
+                    pplcount = str(i)
+                    #cv2.putText(frame, pplcount, (int(x22), int(y22)+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    cv2.putText(frame, ".", (int(x11), int(y11)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 6)
 
-    #Applying Kalmanfilter to yolo detector    /  store centroids in dict  safe pred in blob object
-    if (len(centroids) > 0):
-            for i in centroids:
-                # Predict
-                (x_, y_) = KF.predict()
-                
-                # Draw a rectangle as the predicted object position
-                cv2.rectangle(frame, (int(x_-30), int(y_-50)), (int(x_+30), int(y_+50)), (255, 0, 0), 2)
-                
-                # Update Kalman Trajectory
-                (x1, y1) = KF.update(centroids[7])#KF.update(centers[0])
+                    if (x11>x22):
+                        cv2.putText(frame, ".", (int(x22), int(y22)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 6) 
+                    else:
+                        cv2.putText(frame, ".", (int(x22), int(y22)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,0,100), 6)
 
-                # Draw a rectangle as the estimated object position
-                cv2.rectangle(frame, ( int(x1-30), int(y1-50)), (int(x1+30), int(y1+50)), (0, 0, 255), 2)
-                cv2.putText(frame, "Estimated Position", (int(x1+30), int(y1+50)), 0, 0.5, (0, 0, 255), 2)
-                cv2.putText(frame, "Predicted Position", (int(x_+30), int(y_)), 0, 0.5, (255, 0, 0), 2)
-                cv2.putText(frame, "Measured Position", (int(centroids[0][0]) + 15, int(centroids[0][1]) - 15), 0, 0.5, (0,191,255), 2)
-    
-    
-    
+    cv2.putText(frame, "Enter: Blue", (20,500), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0),3) #B
+    cv2.putText(frame, "Exit: Yellow", (200,540), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,0,100),3) #G
+
     cv2.imshow('frame', frame)
 
     # #check writer
@@ -181,8 +216,9 @@ while True:
     if cv2.waitKey(2) & 0xFF == ord('q'):
         break
 
-
 cv2.destroyAllWindows()
 print("INFO: clean up...")
 #writer.release()
 vs.release()
+
+#need to return centers

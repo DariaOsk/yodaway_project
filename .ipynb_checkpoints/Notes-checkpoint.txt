@@ -1,0 +1,215 @@
+Activate venv: source activate
+unzip tar gz
+Git: git reset HEAD^ 
+
+06.09:
+Do Gantt diagram of plans
+Do resarch into tracking -> use-case relevant 
+Look into projecter.aau.dk -> ask kamal for relevant projects and results 
+-> evtl talk to students/resarchers about their findings and if they will be applicable to this project.
+Kalman filter - or other vision based tracking methods.
+Look at computer vision course to find more info
+Do OpenCV implementations of a couple of trackers to get a feeling for it
+Q: How is the tracker integrated into the whole pipeline? -> look at tracker supported DNN approaches.
+Dive into code of whatever method was chosen.
+Have a weekly status meeting with Laura -> wednesday bc it is the last of the week
+
+07.09:
+TODO: apply googles ML kit onto wildtrack dataset and see what the implemented detector does.
+	see how good ML kit tracker is over multiple camera views
+	produce a trajectory.
+Long term Plan: Test kalman and other trackers on real data from yodaway device 
+
+08.09: TODO: Compare Yodaway pipeline to state-of-the art MOT pipelines 
+		-> see where I can add Kalman Filter and Hungarian Algorithm in their pipeline
+		-> try implementing SORT & Deep SORT on Wildtrack dataset
+		-> find a way to associate data over different camera angles - 
+		-> visualize tracking routes
+		-> distinguish btw people going in one direction and people going in opposite direction
+
+21.09: They will use new hardware allowing them to get rid of the Google ML kit and the integrated face detector 
+	(new hardware: huaweii Atlas 500)  
+	This will enable me to use whatever detector but not focus on it, since only the tracking is relevant.
+	installed dlib with python boost libs:	$ sudo apt-get install build-essential cmake
+						$ sudo apt-get install libgtk-3-dev
+						$ sudo apt-get install libboost-all-dev
+
+27.09: look into training-less methods for time-series predictions that does not rely on historical data:
+	https://hal.archives-ouvertes.fr/hal-01635209/file/ESCC.pdf
+	Data driven models relying on past observations:
+	- AutoRegressic process: linear model
+	- Neural Network model: non-linear model
+
+	Training-less methods: 
+	- Kalman
+	- the persistence/scaled persistence: most cost efficient forecasting model
+	
+	- optical flow for direction estimation:
+		using sparse optical flow as no precision is needed only the rough direction.
+		OpenCV provides: Pyramid Lucas-Kanade
+				 Sparse RLOF
+	- try implementing this: https://github.com/shreyasbhatia09/Face-Detection-and-Tracking/blob/master/Source/detection_tracking.py
+
+	TODO:
+	- GANTT bis Mittwoch - Done
+	- Prototype: recognize if people are leaving or entering
+		     track them with kalman filter
+		     track them with particle filter
+		     track them with optical flow
+			different corner detections: - canny function makes it recognize less
+	- Suggestion: set up a lucas kande tracker that will renew itself every few seconds inside the entry
+			that way we will know if people enter or exit
+
+29.09: TODO:
+	introduce loop for new build of goodFeaturesToTrack
+	Decide Tracker btw Optical Flow, Kalman, Hungarian - evaluate in practice and in theory
+	Send datase
+	Decide Detector: Faces first. opencv2.hog for faces, mtcnn, yolo, dlib
+	Laura gone: 01-08.11
+	Decide if own recording is necessary - simulate queues to decide thresh weather movement or not 
+	Queues dataset
+	Document the different algorithms you have been doing
+	Requirement of 160*160 - faces
+
+
+
+
+
+/ Metrics include official evaluation of a labled dataset
+Dataset
+multi-cam less urgent - facenet - after own data recorded
+run yodaway pipeline over one wildtrack video
+different dataset (indoors ) for evaluation
+yodaway dataset - already done - use for tuning - 7 cameras
+
+
+Rewrite GANTT
+Working on cropping right now
+Writing theoretical part
+decide Kalman 
+
+Listing different MOT approaches: GMM+Hungarian Assignment + RST invariant feature descriptors
+
+Try tracker with annotated data
+Add detector / CNN based is also ok / first of all easy detector / try YOLO
+Count and compare with the ground truth
+Evaluate accuracy 
+python lib deepface - wrapper - pip 
+
+13.10. TODO: -> Include Kalman Filter with Yolo detection 
+	     -> implement counter
+	     -> Find proper metric dataset to evaluate Prototype: 
+	     -> Evaluate Prototype
+	     -> Implement different Trackers: Optical Flow, Kalman Filter, SORT with Yolo
+	     -> Evaluate Prototypes
+	     -> Choose best one depending on metrics
+	     -> Evaluate it with Yodaway dataset
+	     -> See what works or what not
+	     -> Integrate into Yodaway pipeline and see if performance can be measured
+
+Kamal: do you know metrics set 
+
+MOT gt files:
+<frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z> 
+
+https://www.motchallenge.net/instructions
+https://www.kaggle.com/gpreda/google-landmark-recogn-challenge-data-exploration
+
+18.10. Downloaded dataset of indoor space (Hall)
+	https://tev.fbk.eu/technologies/multi-camera-people-tracking-datasets
+
+Git: settings - developer settings - personal access token: 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
+SSH Passphrase: Das Securitier 
+The key Fingerprint is:
+SHA256:iCQFzeoEXEawP8YON8VWxMPgt6n+mhmsC91lTQ/wtNU daria.o@rambler.ru
+The key's randomart image is:
++--[ED25519 256]--+
+|..=B..=+ . ..    |
+|..o.= .++ o  E   |
+| o...= ..=       |
+|  =oo...= o      |
+| + B. .=S. .     |
+|  B = +          |
+| . o =           |
+|  . o +          |
+|   o.=o.         |
++----[SHA256]-----+
+
+Kamal meeting: I have been working on two things this week: setting up template for 
+
+20.10: TODO: 	->implement counter 
+	 	->fix kalman with yolo
+		->set up AP and IOU calculator template 
+		->set up github properly
+
+Did this week - I found git code for evaluation 
+		I am still looking into the implementation of the precision calculation - conversion of the ground truth to a format 
+		I started implementing a detection identificator - something that will count people and add a visual component for the tracks
+		detections get a cost depending on the frames that 
+		Ask if proofreading is cool
+Baseline for evaluations
+Hungarian algorithm for correct detection assignment to tracks
+Table for different trackers and parameters to compare
+
+Kamal: -> I am resolving issues with my tracking - 
+	-> code iterating through detections and creates objects for each detection which has an Id
+	-> for each object a cost matrix is created 
+	-> sum of square distance btw detection and prediction is calculated applied to the object and if it is lost in the frame the cost is increasing.
+	-> Hungarian algorithm to assign detections - minimum weight matching python lib function
+	-> if cost matrix becomes to high (threshold, skipped frames) it is deleted 
+	-> from unassigned detections a new object is created
+	-> so basically the code is working fine with one object for a while and then it starts setting up the counter
+	-> not exactly sure why
+	-> with multiple objects 
+Questions: how is the hand-in going to work? second of january
+
+	   In what form is the exam going to be? It is on a sunday I have heard and two weeks after the hand-in
+
+Kamal says: Tracker is outdated - public databases require state of the art methods 
+		-> Need to justify the outdated tracker by tests on their hardware!
+	    Figure out if face information can improve the tracker performance!
+		-> Talk to Laura what the hypothesis is actually - is the tracker improving performance or the detecter improving a tracker
+	    KAlman Filter has a lot of false positives so that is bad!
+		-> see if face detector/whatever detector is going to be imporving that ratio of false-positives
+	    Are they going to use their face detector solely or are they also going to use the yolo detection?
+		-> Laura says: only face detectro right now.
+
+Meeting 10.11: 
+-> what other trackers do they have? 
+-> In what manner will my tracker improve the performance?
+-> Where can I test my tracker
+-> How can I implement it into the pipeline?
+
+Accuracy difference from yodaways old trackers - and also runtime 
+Track people 
+Yodaways sytem is dynamic - their primary goal is to look for the accuracy in the tracking of detected people - 
+if the trackers accuracy is so important to their main goal the system can be adapted to what element is most important.
+So computational resources can be allocated for a rather computationally intensive state of the art deep learning tracker 
+or if the trackers are just as good as the detector then a rather lightweight tracker will be included.
+
+The Goal: three different trackers need to be compared - optical flow, kalman, deepsort -> they need to be evaluated
+Evaluation will happen on their system with: 1. mtcnn -> pip install mvt -> their face detector and their trackers
+					     2. mtcnn -> Their detector and all my trackers
+Evaluation will happen on my system with:    3. yolo -> My detector and all my trackers
+				
+maybe try also cvlib yolo and emtcnn instead of the whole thing I programmed by myself	     
+opencv -> csrt
+
+Technical Report:
+- tracking-by-detection
+- detection-by-tracking 
+- trackers for limited devices
+
+Python metrics lib (same style as MOT challenge metrics)
+https://github.com/cheind/py-motmetrics
+
+Human computer interaction part of the paper - security concerns and re-identitification without personal data  
+
+Questions for Kamal: How is the focus on integrating a human computer interaction focus on the topic
+		     How long should the report be
+		     
+			I am progress with the detector - tracker - implementation
+			RN I am implementing the MOT evaluation for my project
+
+What is the threshold in the MOT calculation? -> visualize it some
+				
