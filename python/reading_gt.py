@@ -171,7 +171,8 @@ def rerewrite_new_gt():
         for i in txtlines:
             outfile.write(i)
 
-#if __name__ == "__main__":
+if __name__ == "__main__":
+    print(coord_from_gt())
     #coord_from_gt()
     #dist_from_gt(test)
     #rerewrite_new_gt()
