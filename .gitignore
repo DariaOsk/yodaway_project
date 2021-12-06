@@ -149,3 +149,7 @@ MOT15/
 MOT16/
 TestOnePlus1_data/
 TestOnePlus1/
+Scripts/
+pyvenv.cfg
+share/
+.ipynb_checkpoints/
