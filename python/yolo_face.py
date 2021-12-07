@@ -24,7 +24,7 @@ def load_mobilenetv2_224_075_detector(path):
     return model
 
 mobilenetv2 = load_mobilenetv2_224_075_detector("../face_detector/facedetection-mobilenetv2-size224-alpha0.75.h5")
-
+mobilenetv2.summary()
 
 # Converts A:B aspect rate to B:A
 def transpose_shots(shots):

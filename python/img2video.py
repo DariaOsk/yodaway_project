@@ -4,7 +4,7 @@ from moviepy.video.VideoClip import ImageClip
 import moviepy.video.io.ImageSequenceClip
 
 dir_path= '../data/img/'#'path/to/data'
-image_folder = 'tud-crossing-sequence'#folder_name'
+image_folder = 'TestOnePlus1'#folder_name'
 path = dir_path + image_folder + '/'
 print(path)
 fps=24
