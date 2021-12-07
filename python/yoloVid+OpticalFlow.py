@@ -57,7 +57,7 @@ c_params = dict(    threshold1=50,
                     threshold2=190,
                     edges=3,
                     )
-
+ 
 #Lucas Kanade optical flow
 lk_params = dict(   winSize = (7,7),
                     maxLevel=2,

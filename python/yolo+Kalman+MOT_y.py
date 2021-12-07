@@ -18,7 +18,9 @@ from reading_gt_yodaway import dist_from_gt,draw_bbox_gt
 #from utils import *
 
 #instead of argparse fixed values  --output output/wildrack_MOT.avi --yolo yolo-coco\venvYodaway\code\yolo>
+
 inputvid =  "../data/vid/TestOnePlus1.mp4" #cam1_5s.mp4"
+
 output_dir = "./output"
 yolo_dir = "../yolov3"
 confidence = 0.7 #default 0.5
@@ -227,24 +229,9 @@ while True:
 
     cv2.imshow('frame', frame) 
 
-    #check writer
-    if writer is None:
-        #init video writer
-        print("ENTERING WRITER I REAÖÖIE HOPE YPU SEEE THISSSSSSSSSSS")
-        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-        writer = cv2.VideoWriter(output_dir, fourcc, 30, (frame.shape[1], frame.shape[0]), True)
-
-        #single frame processing
-        if total>0:
-            elap = (end-start)
-            print("INFO: single frame took {:.4f} seconds".format(elap))
-            print("INFO: estimated toatal time to finish {:.4f}".format(elap*total))
-
-    writer.write(frame)
-
     frame_cnt +=1
 
-    if frame_cnt == 100:
+    if frame_cnt == 300:
         mh = mm.metrics.create()
        
         summary = mh.compute_many(  [acc, acc.events.loc[0:1]],
@@ -257,7 +244,22 @@ while True:
         print(strsummary)
         break
 
-    
+    #check writer
+    if writer is None:
+        #init video writer
+        print("ENTERING WRITER I REAÖÖIE HOPE YPU SEEE THISSSSSSSSSSS")
+
+        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+        writer = cv2.VideoWriter(output_dir, fourcc, 30, (frame.shape[1], frame.shape[0]), True)
+
+        #single frame processing
+        if total>0:
+            elap = (end-start)
+            print("INFO: single frame took {:.4f} seconds".format(elap))
+            print("INFO: estimated toatal time to finish {:.4f}".format(elap*total))
+
+    writer.write(frame)
+
     if cv2.waitKey(2) & 0xFF == ord('q'):
         break
 

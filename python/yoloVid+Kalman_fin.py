@@ -16,7 +16,7 @@ from numpy.lib.type_check import _nan_to_num_dispatcher
 
 
 #instead of argparse fixed values  --output output/wildrack_MOT.avi --yolo yolo-coco\venvYodaway\code\yolo>
-inputvid =  "../data/vid/annotated_seq1.mp4" #cam1_5s.mp4"
+inputvid =  "../data/vid/cam1_5s.mp4" #cam1_5s. annotated_seq1.mp4"
 output_dir = "./output"
 yolo_dir = "../yolov3"
 confidence = 0.7 #default 0.5
