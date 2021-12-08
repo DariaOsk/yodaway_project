@@ -126,13 +126,13 @@ while True:
                     cv2.putText(frame, ".", (int(x11), int(y11)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 6)
 
                     if (x11>x22):
+                        cv2.putText(frame, ".", (int(x22), int(y22)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,200,210), 6)
+                    if (x22>x11):
                         cv2.putText(frame, ".", (int(x22), int(y22)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 6) 
-                    else:
-                        cv2.putText(frame, ".", (int(x22), int(y22)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,0,100), 6)
-
-    cv2.putText(frame, "Enter: Blue", (20,500), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0),3) #B
-    cv2.putText(frame, "Exit: Yellow", (200,540), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100,0,100),3) #G
-
+                    
+    cv2.putText(frame, "Enter: Green", (20,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0),1) #B
+    cv2.putText(frame, "Exit: Yellow", (20,80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,200,210),1) #G
+    
     cv2.imshow('frame', frame)
 
     # #check writer

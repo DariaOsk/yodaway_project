@@ -2,6 +2,7 @@
 # reading ground truth files
 import fileinput
 from os import write
+import os
 import sys
 import numpy as np
 import pandas as pd
@@ -12,6 +13,8 @@ import cv2
 
 bb_in_frame = []
 
+folderpath = "../data/TestOnePlus1_data/"
+files = os.listdir(folderpath)
 ano_txt = "../data/img/tud_cross_gt.txt"
 max_distance = 10000.  #maximal allowed distance between gt and hypothesis centroids
 test = [[25.0, 74.0], [-28.5, -88.0], [-28.0, -82.0], [29.0, 83.0], [-29.0, -95.5], [29.5, -81.0], [-27.5, -73.5]]
