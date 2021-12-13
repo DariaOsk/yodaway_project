@@ -135,8 +135,8 @@ def draw_bbox_gt(frame_vid, frame_cnt_vid):
                 cx = int(x + ((x+w)-(x))/2)
                 cy = int((y+h) - ((y+h)-y)/2)
                 print("objid: ", objectid, "x,y: ", x,y ,w,h)
-                cv2.putText(frame_vid, ".", centroid, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (10,10,10),4)
-                cv2.rectangle(frame_vid, p1, p2, (13,10,10), 2)
+                cv2.putText(frame_vid, ".", centroid, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,10,10),4)
+                cv2.rectangle(frame_vid, p1, p2, (255,10,10), 2)
             else: continue
 
 # def dist_from_gt(frame_cnt_vid, hypothesis_c):
