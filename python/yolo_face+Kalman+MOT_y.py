@@ -34,6 +34,7 @@ track_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
             # -> write something like : len(detections) = track_colors > [fill random(0,255)] but only for first frame 
 pause = False
 person_id = 14
+start_frame_number = 245
 
 #create accumulator that will be updated during each frame
 acc = mm.MOTAccumulator(auto_id=True)
@@ -51,6 +52,8 @@ COLORS = np.random.randint(0, 255, size=(len(LABELS), 3), dtype="uint8")
 
 #init of videostream 
 vs = cv2.VideoCapture(inputvid)
+
+#vs.set(cv2.CAP_PROP_POS_FRAMES, start_frame_number) #delete afterwards just for frame gt improvement
 #count total nr of frames in video
 try:
     prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT if imutils.is_cv2() \

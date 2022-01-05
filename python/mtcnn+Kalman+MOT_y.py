@@ -166,7 +166,7 @@ while True:
     distances, gt_ids = dist_from_gt(frame_cnt, hypothesis_xy)
     # populating accumulator for later evaluation
     frameid = acc.update(gt_ids, hypothesis_ids, distances)
-    print(acc.mot_events)
+    #print(acc.mot_events)
 
     cv2.imshow('frame', frame)
 
@@ -186,6 +186,7 @@ while True:
         print(strsummary)
         break
     
+
     # #check writer
     # if writer is None:
     #     #init video writer
